@@ -14,7 +14,7 @@ testing = [
 ]
 
 [build-system]
-requires = ["hatchling>=1.18.0"]
+requires = ["hatchling>=1.18.0", "hatch-cython>=0.5.0", "numpy>=1.20.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -23,6 +23,27 @@ path = "cython_framework/__about__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["cython_framework"]
 
+# Cython compilation via hatch-cython plugin
+# Activated when building wheels: pixi run python -m build
+# Compiles .pyx files (including symlinked augmented .py files) to .so extensions
+[tool.hatch.build.targets.wheel.hooks.cython]
+dependencies = ["hatch-cython>=0.5.0", "numpy>=1.20.0"]
+
+[tool.hatch.build.targets.wheel.hooks.cython.options]
+# Only compile .pyx files, not all .py files
+compile_py = false
+include_numpy = true
+include_pyarrow = false
+directives = { boundscheck = false, nonecheck = false, language_level = 3, binding = true }
+define_macros = [
+    ["NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION"],
+]
+compile_args = [
+    { platforms = ["linux", "darwin"], arg = "-O2" },
+    { platforms = ["darwin"], arch = "arm64", arg = "-arch arm64" },
+    { platforms = ["darwin"], arch = "x86_64", arg = "-arch x86_64" },
+]
+
 [tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
@@ -30,6 +51,8 @@ platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
 [tool.pixi.dependencies]
 python = ">=3.10,<3.13"
 cython = ">=3"
+numpy = ">=1.20.0"
+hatch-cython = ">=0.5.0"
 
 [tool.pixi.feature.dev.dependencies]
 pytest = ">=7.4.0"
