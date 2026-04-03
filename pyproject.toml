@@ -14,7 +14,7 @@ testing = [
 ]
 
 [build-system]
-requires = ["hatchling>=1.18.0", "hatch-cython>=0.5.0", "numpy>=1.20.0"]
+requires = ["hatchling>=1.18.0", "hatch-cython>=0.6.0", "numpy>=1.20.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -27,7 +27,7 @@ packages = ["cython_framework"]
 # Activated when building wheels: pixi run python -m build
 # Compiles .pyx files (including symlinked augmented .py files) to .so extensions
 [tool.hatch.build.targets.wheel.hooks.cython]
-dependencies = ["hatch-cython>=0.5.0", "numpy>=1.20.0"]
+dependencies = ["hatch-cython>=0.6.0", "numpy>=1.20.0"]
 
 [tool.hatch.build.targets.wheel.hooks.cython.options]
 # Only compile .pyx files, not all .py files
@@ -60,6 +60,8 @@ pytest-asyncio = ">=0.21.0"
 pytest-cov = "*"
 ruff = "*"
 mypy = "*"
+python-build = "*"
+hatchling = ">=1.18.0"
 
 [tool.pixi.feature.ci.dependencies]
 ruff = ">=0.1.6"
@@ -81,6 +83,8 @@ format-check = "ruff format --check cython_framework tests"
 typecheck = "mypy cython_framework"
 quality = { depends-on = ["lint", "format-check"] }
 check = { depends-on = ["quality", "test"] }
+build = "python -m build --wheel --no-isolation"
+test-compile = { depends-on = ["build", "test"] }
 
 [tool.ruff]
 target-version = "py310"
