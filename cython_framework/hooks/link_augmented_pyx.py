@@ -5,6 +5,7 @@ Scans staged .py files for the `# cython: augmented_pure_python=True` pragma.
 Creates relative .pyx symlinks so Cython build discovers them.
 Removes stale .pyx symlinks pointing to non-augmented .py files.
 """
+
 import subprocess
 from pathlib import Path
 
@@ -14,7 +15,8 @@ PRAGMA = "# cython: augmented_pure_python=True"
 def get_staged_py_files() -> list[Path]:
     result = subprocess.run(
         ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
-        capture_output=True, text=True
+        capture_output=True,
+        text=True,
     )
     return [Path(f) for f in result.stdout.strip().split("\n") if f.endswith(".py")]
 
