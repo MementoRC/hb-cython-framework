@@ -58,6 +58,8 @@ hatch-cython = ">=0.5.0"
 pytest = ">=7.4.0"
 pytest-asyncio = ">=0.21.0"
 pytest-cov = "*"
+pytest-xdist = "*"
+pytest-timeout = "*"
 ruff = "*"
 mypy = "*"
 python-build = "*"
@@ -99,6 +101,8 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
 timeout = 300
+log_cli = true
+log_cli_level = "DEBUG"
 
 [tool.coverage.run]
 branch = true
