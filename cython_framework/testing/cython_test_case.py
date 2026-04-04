@@ -70,10 +70,11 @@ import sys
 import time
 import types
 import unittest
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Callable, ClassVar
+from typing import Any, ClassVar
 
 from .isolated_asyncio_wrapper_test_case import IsolatedAsyncioWrapperTestCase
 
@@ -109,7 +110,10 @@ def _check_failures(results, strict_all_variants=False):
             if result != "PASS":
                 raise AssertionError(f"Failed for {impl}: {result}")
     else:
-        if CythonModuleType.AUGMENTED_PYTHON not in results or results[CythonModuleType.AUGMENTED_PYTHON] != "PASS":
+        if (
+            CythonModuleType.AUGMENTED_PYTHON not in results
+            or results[CythonModuleType.AUGMENTED_PYTHON] != "PASS"
+        ):
             for impl, result in results.items():
                 if result != "PASS":
                     raise AssertionError(f"Failed for {impl}: {result}")
@@ -124,12 +128,13 @@ def cython_test_implementations(*test_impls):
             for impl in impls:
                 if impl in self.modules:
                     _run_implementation_tests(
-                        test_func, self, results, impl,
-                        self.modules[impl][0], args, kwargs
+                        test_func, self, results, impl, self.modules[impl][0], args, kwargs
                     )
             _report_results(results, self.modules)
-            _check_failures(results, getattr(self, 'STRICT_ALL_VARIANTS', False))
+            _check_failures(results, getattr(self, "STRICT_ALL_VARIANTS", False))
+
         return wrapper
+
     return decorator
 
 
@@ -154,12 +159,13 @@ def async_cython_test_implementations(*test_impls):
             for impl in impls:
                 if impl in self.modules:
                     await _run_async_implementation_tests(
-                        test_func, self, results, impl,
-                        self.modules[impl][0], args, kwargs
+                        test_func, self, results, impl, self.modules[impl][0], args, kwargs
                     )
             _report_results(results, self.modules)
-            _check_failures(results, getattr(self, 'STRICT_ALL_VARIANTS', False))
+            _check_failures(results, getattr(self, "STRICT_ALL_VARIANTS", False))
+
         return wrapper
+
     return decorator
 
 
@@ -172,6 +178,7 @@ class CythonModuleType(Enum):
     COMPILED_AUGMENTED_PYTHON: Compiled Augmented Python implementation
     PURE_CYTHON: Pure Cython implementation
     """
+
     PURE_PYTHON = auto()  # __pure_python__/module.py
     AUGMENTED_PYTHON = auto()  # module.py
     COMPILED_AUGMENTED_PYTHON = auto()  # module.*.so
@@ -184,8 +191,10 @@ class CythonModuleLoader:
     Helper class to load Cython modules for CythonTestCase derived classes.
     It is intended to test an Augmented Pure Python module and compare its behavior
     with a Pure Python, Compiled Augmented Python, and Pure Cython implementations.
-    The Pure Python implementation is expected to be under <module.py dir>/__pure_python__ directory.
-    The Pure Cython implementation is expected to be under <module.py dir>/__pure_cython__ directory.
+    The Pure Python implementation is expected to be under
+    <module.py dir>/__pure_python__ directory.
+    The Pure Cython implementation is expected to be under
+    <module.py dir>/__pure_cython__ directory.
     The Compiled Augmented Python implementation is expected to be a .so file in <module.py dir>.
 
     :param module_path: Path to the module
@@ -194,13 +203,14 @@ class CythonModuleLoader:
         the main module in __pure_python__ (e.g. ["cython_definitions", "candle_data"])
     """
 
-    def __init__(self, module_path: str, module_name: str,
-                 pure_python_deps: list[str] | None = None) -> None:
+    def __init__(
+        self, module_path: str, module_name: str, pure_python_deps: list[str] | None = None
+    ) -> None:
         self.module_path = module_path
         self.module_name = module_name
         self.pure_python_deps = pure_python_deps or []
         self.project_root = self._get_project_root()
-        path_parts = self.module_path.split('.')
+        path_parts = self.module_path.split(".")
         self.module_dir = self.project_root / Path(*path_parts)
         self._validate_paths()
 
@@ -213,17 +223,15 @@ class CythonModuleLoader:
                 return current
             current = current.parent
 
-        raise FileNotFoundError(
-            "Could not find project root (no pyproject.toml or .git found)"
-        )
+        raise FileNotFoundError("Could not find project root (no pyproject.toml or .git found)")
 
     def _setup_package(self):
         """Setup package structure for imports"""
         if str(self.project_root) not in sys.path:
             sys.path.insert(0, str(self.project_root))
 
-        parts = self.module_path.split('.')
-        current_pkg = ''
+        parts = self.module_path.split(".")
+        current_pkg = ""
         current_path = self.project_root
 
         for part in parts:
@@ -235,8 +243,9 @@ class CythonModuleLoader:
                 module.__path__ = [str(current_path)]
                 module.__package__ = current_pkg
                 module.__file__ = str(current_path / "__init__.py")
-                module.__spec__ = importlib.util.spec_from_file_location(current_pkg,
-                                                                         str(current_path / "__init__.py"))
+                module.__spec__ = importlib.util.spec_from_file_location(
+                    current_pkg, str(current_path / "__init__.py")
+                )
                 sys.modules[current_pkg] = module
 
     def _validate_paths(self) -> None:
@@ -290,9 +299,7 @@ class CythonModuleLoader:
         if not py_path.exists():
             raise FileNotFoundError(f"Pure Python module not found: {py_path}")
 
-        return self._import_from_path(
-            py_path, variant=CythonModuleType.PURE_PYTHON
-        ), "Pure Python"
+        return self._import_from_path(py_path, variant=CythonModuleType.PURE_PYTHON), "Pure Python"
 
     def _load_augmented_python(self) -> tuple[Any, str]:
         """Load current implementation as Python, bypassing any .so files.
@@ -322,13 +329,15 @@ class CythonModuleLoader:
             raise FileNotFoundError(f"Pure Cython directory not found: {cython_dir}")
         so_path = self._find_so_file(cython_dir)
         sys.modules.pop(self.module_name, None)
-        return self._import_from_path(
-            so_path, variant=CythonModuleType.PURE_CYTHON
-        ), "Pure Cython"
+        return self._import_from_path(so_path, variant=CythonModuleType.PURE_CYTHON), "Pure Cython"
 
-    def _import_from_path(self, path: Path, *,
-                          variant: CythonModuleType | None = None,
-                          module_name_override: str | None = None) -> Any:
+    def _import_from_path(
+        self,
+        path: Path,
+        *,
+        variant: CythonModuleType | None = None,
+        module_name_override: str | None = None,
+    ) -> Any:
         """Import module with proper package context.
 
         Uses namespaced sys.modules keys per variant to avoid collisions
@@ -369,12 +378,13 @@ class CythonTestMixin:
 
     @classmethod
     def _check_class_attributes(cls) -> None:
-        if not hasattr(cls, 'MODULE_PATH') or not hasattr(cls, 'MODULE_NAME'):
+        if not hasattr(cls, "MODULE_PATH") or not hasattr(cls, "MODULE_NAME"):
             raise NotImplementedError("Define MODULE_PATH and MODULE_NAME")
 
     def _init_module_loader(self) -> None:
         self.loader = CythonModuleLoader(
-            self.MODULE_PATH, self.MODULE_NAME,
+            self.MODULE_PATH,
+            self.MODULE_NAME,
             pure_python_deps=self.PURE_PYTHON_DEPS,
         )
         self.modules = {}
@@ -425,6 +435,7 @@ class CythonIsoAsyncioTestCase(IsolatedAsyncioWrapperTestCase, CythonTestMixin):
 @dataclass
 class BenchmarkResult:
     """Results from a benchmark run."""
+
     implementation: str
     total_time: float
     runs: int
@@ -443,13 +454,13 @@ class BenchmarkMixin:
     """Mixin providing benchmarking capabilities to test cases."""
 
     def run_benchmark(
-            self,
-            func: Callable,
-            *args,
-            num_runs: int = 10000,
-            warmup_runs: int = 100,
-            implementation: str = 'unknown',
-            **kwargs,
+        self,
+        func: Callable,
+        *args,
+        num_runs: int = 10000,
+        warmup_runs: int = 100,
+        implementation: str = "unknown",
+        **kwargs,
     ) -> BenchmarkResult:
         """
         Run a benchmark on the specified function.
@@ -480,7 +491,9 @@ class BenchmarkMixin:
 
 
 class BenchmarkTestCase(CythonTestCase, BenchmarkMixin):
-    def benchmark_all(self, func_name: str, *args, **kwargs) -> dict[CythonModuleType, BenchmarkResult]:
+    def benchmark_all(
+        self, func_name: str, *args, **kwargs
+    ) -> dict[CythonModuleType, BenchmarkResult]:
         results = {}
         for impl, (module, impl_name) in self.modules.items():
             func = getattr(module, func_name)

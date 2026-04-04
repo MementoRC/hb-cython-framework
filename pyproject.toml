@@ -110,6 +110,7 @@ py312 = { features = ["py312", "dev"], solve-group = "py312" }
 test = "pytest tests/"
 test-unit = "pytest tests/unit/"
 lint = "ruff check cython_framework tests"
+lint-fix = "ruff check --fix cython_framework tests"
 format = "ruff format cython_framework tests"
 format-check = "ruff format --check cython_framework tests"
 typecheck = "mypy cython_framework"

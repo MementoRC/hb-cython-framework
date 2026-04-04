@@ -2,8 +2,8 @@ import asyncio
 import functools
 import unittest
 from asyncio import Task
-from collections.abc import Set
-from typing import Any, Awaitable, Callable, Coroutine, List, Optional, TypeVar
+from collections.abc import Awaitable, Callable, Coroutine, Set
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
@@ -54,8 +54,9 @@ class IsolatedAsyncioWrapperTestCase(unittest.IsolatedAsyncioTestCase):
     """
     Custom test case class that wraps `unittest.IsolatedAsyncioTestCase`.
 
-    This class provides additional functionality to set up and tear down the asyncio event loop for each test case.
-    It ensures that each test case runs in an isolated asyncio event loop, preventing interference between test cases.
+    Provides functionality to set up and tear down the asyncio event loop
+    for each test case. Ensures each test runs in an isolated asyncio event
+    loop, preventing interference between test cases.
 
     Example usage:
     ```python
@@ -98,8 +99,8 @@ class IsolatedAsyncioWrapperTestCase(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         super().tearDownClass()
-        # Ok, asyncio.IsolatedAsyncioTestCase kills the main event loop no matter it's initial state.
-        # We need to restore it here, otherwise any tests after this one will fail if it relies on the main event loop.
+        # IsolatedAsyncioTestCase kills the main event loop regardless
+        # of initial state. Restore it so subsequent tests work.
         if cls.main_event_loop is not None and not cls.main_event_loop.is_closed():
             asyncio.set_event_loop(cls.main_event_loop)
         else:
@@ -115,10 +116,12 @@ class IsolatedAsyncioWrapperTestCase(unittest.IsolatedAsyncioTestCase):
         :return: The result of the coroutine.
         :rtype: Any
         """
-        return self.local_event_loop.run_until_complete(asyncio.wait_for(coroutine, timeout=timeout))
+        return self.local_event_loop.run_until_complete(
+            asyncio.wait_for(coroutine, timeout=timeout)
+        )
 
     @staticmethod
-    async def await_task_completion(tasks_name: Optional[str | List[str]]) -> None:
+    async def await_task_completion(tasks_name: str | list[str] | None) -> None:
         """
         Await the completion of the given task.
 
@@ -138,7 +141,12 @@ class IsolatedAsyncioWrapperTestCase(unittest.IsolatedAsyncioTestCase):
         if isinstance(tasks_name, str):
             tasks_name = [tasks_name]
         tasks: Set[Task] = asyncio.all_tasks()
-        tasks = {task for task in tasks for task_name in tasks_name if task_name == get_coro_func_name(task)}
+        tasks = {
+            task
+            for task in tasks
+            for task_name in tasks_name
+            if task_name == get_coro_func_name(task)
+        }
 
         if tasks:
             await asyncio.wait(tasks)
@@ -148,8 +156,9 @@ class LocalClassEventLoopWrapperTestCase(unittest.TestCase):
     """
     Custom test case class that wraps `unittest.TestCase`.
 
-    This class provides additional functionality to manage the main event loop and a local event loop for tests.
-    It ensures that each test case runs in a local asyncio event loop, preventing interference between test suites.
+    This class provides additional functionality to manage the main event loop
+    and a local event loop for tests. It ensures that each test case runs in a
+    local asyncio event loop, preventing interference between test suites.
 
     Example usage:
     ```python
@@ -160,8 +169,8 @@ class LocalClassEventLoopWrapperTestCase(unittest.TestCase):
     ```
     """
 
-    main_event_loop: Optional[asyncio.AbstractEventLoop] = None
-    local_event_loop: Optional[asyncio.AbstractEventLoop] = None
+    main_event_loop: asyncio.AbstractEventLoop | None = None
+    local_event_loop: asyncio.AbstractEventLoop | None = None
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -198,15 +207,18 @@ class LocalClassEventLoopWrapperTestCase(unittest.TestCase):
         :return: The result of the coroutine.
         :rtype: Any
         """
-        return self.local_event_loop.run_until_complete(asyncio.wait_for(coroutine, timeout=timeout))
+        return self.local_event_loop.run_until_complete(
+            asyncio.wait_for(coroutine, timeout=timeout)
+        )
 
 
 class LocalTestEventLoopWrapperTestCase(unittest.TestCase):
     """
     Custom test case class that wraps `unittest.TestCase`.
 
-    This class provides additional functionality to manage the main event loop and a local event loop for each test.
-    It ensures that each test case runs in a local asyncio event loop, preventing interference between test suites.
+    This class provides additional functionality to manage the main event loop
+    and a local event loop for each test. It ensures that each test case runs
+    in a local asyncio event loop, preventing interference between test suites.
 
     Example usage:
     ```python
@@ -217,8 +229,8 @@ class LocalTestEventLoopWrapperTestCase(unittest.TestCase):
     ```
     """
 
-    main_event_loop: Optional[asyncio.AbstractEventLoop] = None
-    local_event_loop: Optional[asyncio.AbstractEventLoop] = None
+    main_event_loop: asyncio.AbstractEventLoop | None = None
+    local_event_loop: asyncio.AbstractEventLoop | None = None
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -264,4 +276,6 @@ class LocalTestEventLoopWrapperTestCase(unittest.TestCase):
         :return: The result of the coroutine.
         :rtype: Any
         """
-        return self.local_event_loop.run_until_complete(asyncio.wait_for(coroutine, timeout=timeout))
+        return self.local_event_loop.run_until_complete(
+            asyncio.wait_for(coroutine, timeout=timeout)
+        )
