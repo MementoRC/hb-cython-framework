@@ -70,10 +70,11 @@ import sys
 import time
 import types
 import unittest
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Callable, ClassVar
+from typing import Any, ClassVar
 
 from .isolated_asyncio_wrapper_test_case import IsolatedAsyncioWrapperTestCase
 
@@ -190,8 +191,10 @@ class CythonModuleLoader:
     Helper class to load Cython modules for CythonTestCase derived classes.
     It is intended to test an Augmented Pure Python module and compare its behavior
     with a Pure Python, Compiled Augmented Python, and Pure Cython implementations.
-    The Pure Python implementation is expected to be under <module.py dir>/__pure_python__ directory.
-    The Pure Cython implementation is expected to be under <module.py dir>/__pure_cython__ directory.
+    The Pure Python implementation is expected to be under
+    <module.py dir>/__pure_python__ directory.
+    The Pure Cython implementation is expected to be under
+    <module.py dir>/__pure_cython__ directory.
     The Compiled Augmented Python implementation is expected to be a .so file in <module.py dir>.
 
     :param module_path: Path to the module
