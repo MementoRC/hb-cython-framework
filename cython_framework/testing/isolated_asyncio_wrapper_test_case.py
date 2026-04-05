@@ -115,7 +115,9 @@ class IsolatedAsyncioWrapperTestCase(unittest.IsolatedAsyncioTestCase):
         :return: The result of the coroutine.
         :rtype: Any
         """
-        return self.local_event_loop.run_until_complete(asyncio.wait_for(coroutine, timeout=timeout))
+        return self.local_event_loop.run_until_complete(
+            asyncio.wait_for(coroutine, timeout=timeout)
+        )
 
     @staticmethod
     async def await_task_completion(tasks_name: Optional[str | List[str]]) -> None:
@@ -138,7 +140,12 @@ class IsolatedAsyncioWrapperTestCase(unittest.IsolatedAsyncioTestCase):
         if isinstance(tasks_name, str):
             tasks_name = [tasks_name]
         tasks: Set[Task] = asyncio.all_tasks()
-        tasks = {task for task in tasks for task_name in tasks_name if task_name == get_coro_func_name(task)}
+        tasks = {
+            task
+            for task in tasks
+            for task_name in tasks_name
+            if task_name == get_coro_func_name(task)
+        }
 
         if tasks:
             await asyncio.wait(tasks)
@@ -198,7 +205,9 @@ class LocalClassEventLoopWrapperTestCase(unittest.TestCase):
         :return: The result of the coroutine.
         :rtype: Any
         """
-        return self.local_event_loop.run_until_complete(asyncio.wait_for(coroutine, timeout=timeout))
+        return self.local_event_loop.run_until_complete(
+            asyncio.wait_for(coroutine, timeout=timeout)
+        )
 
 
 class LocalTestEventLoopWrapperTestCase(unittest.TestCase):
@@ -264,4 +273,6 @@ class LocalTestEventLoopWrapperTestCase(unittest.TestCase):
         :return: The result of the coroutine.
         :rtype: Any
         """
-        return self.local_event_loop.run_until_complete(asyncio.wait_for(coroutine, timeout=timeout))
+        return self.local_event_loop.run_until_complete(
+            asyncio.wait_for(coroutine, timeout=timeout)
+        )
