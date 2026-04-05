@@ -63,7 +63,7 @@ mypy = "*"
 python-build = "*"
 hatchling = ">=1.18.0"
 
-[tool.pixi.feature.dev.pypi-dependencies]
+[tool.pixi.feature.refactor.pypi-dependencies]
 refactor = { path = "../../../../refactor-applications", editable = true }
 
 [tool.pixi.feature.ci.dependencies]
@@ -101,7 +101,7 @@ python = "3.11.*"
 python = "3.12.*"
 
 [tool.pixi.environments]
-default = { features = ["dev"], solve-group = "default" }
+default = { features = ["dev", "refactor"], solve-group = "default" }
 ci = { features = ["ci", "dev"], solve-group = "default" }
 quality-extended = { features = ["quality-extended"], solve-group = "default" }
 quality-ci = { features = ["quality-ci"], solve-group = "default" }
