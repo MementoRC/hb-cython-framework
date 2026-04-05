@@ -63,6 +63,9 @@ mypy = "*"
 python-build = "*"
 hatchling = ">=1.18.0"
 
+[tool.pixi.feature.dev.pypi-dependencies]
+refactor = { path = "../../../../refactor-applications", editable = true }
+
 [tool.pixi.feature.ci.dependencies]
 ruff = ">=0.1.6"
 mypy = ">=1.5.1"
@@ -120,6 +123,10 @@ build = "python -m build --wheel --no-isolation"
 test-compile = { depends-on = ["build", "test"] }
 security = "bandit -c pyproject.toml -r cython_framework/"
 type-check = "mypy cython_framework"
+cython-convert = "python cython_framework/refactors/cython_rules.py --apply"
+cython-convert-dry = "python cython_framework/refactors/cython_rules.py"
+pytest-migrate = "python cython_framework/refactors/pytest_rules.py --apply"
+pytest-migrate-dry = "python cython_framework/refactors/pytest_rules.py"
 
 [tool.ruff]
 target-version = "py310"
