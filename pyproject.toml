@@ -122,6 +122,11 @@ build = "python -m build --wheel --no-isolation"
 test-compile = { depends-on = ["build", "test"] }
 security = "bandit -c pyproject.toml -r cython_framework/"
 type-check = "mypy cython_framework"
+install-refactor = "python -m pip install -e ../../../../refactor-applications --no-deps"
+cython-convert = "python cython_framework/refactors/cython_rules.py --apply"
+cython-convert-dry = "python cython_framework/refactors/cython_rules.py"
+pytest-migrate = "python cython_framework/refactors/pytest_rules.py --apply"
+pytest-migrate-dry = "python cython_framework/refactors/pytest_rules.py"
 
 [tool.ruff]
 target-version = "py310"
