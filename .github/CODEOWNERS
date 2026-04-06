@@ -1,0 +1,7 @@
+* @MementoRC
+/cython_framework/ @MementoRC
+/cython_framework/testing/ @MementoRC
+/cython_framework/hooks/ @MementoRC
+/tests/ @MementoRC
+/.github/ @MementoRC
+/pyproject.toml @MementoRC

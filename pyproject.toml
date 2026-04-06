@@ -14,7 +14,7 @@ testing = [
 ]
 
 [build-system]
-requires = ["hatchling>=1.18.0"]
+requires = ["hatchling>=1.18.0", "hatch-cython>=0.6.0", "numpy>=1.20.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -23,6 +23,27 @@ path = "cython_framework/__about__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["cython_framework"]
 
+# Cython compilation via hatch-cython plugin
+# Activated when building wheels: pixi run python -m build
+# Compiles .pyx files (including symlinked augmented .py files) to .so extensions
+[tool.hatch.build.targets.wheel.hooks.cython]
+dependencies = ["hatch-cython>=0.6.0", "numpy>=1.20.0"]
+
+[tool.hatch.build.targets.wheel.hooks.cython.options]
+# Only compile .pyx files, not all .py files
+compile_py = false
+include_numpy = true
+include_pyarrow = false
+directives = { boundscheck = false, nonecheck = false, language_level = 3, binding = true }
+define_macros = [
+    ["NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION"],
+]
+compile_args = [
+    { platforms = ["linux", "darwin"], arg = "-O2" },
+    { platforms = ["darwin"], arch = "arm64", arg = "-arch arm64" },
+    { platforms = ["darwin"], arch = "x86_64", arg = "-arch x86_64" },
+]
+
 [tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
@@ -30,13 +51,19 @@ platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
 [tool.pixi.dependencies]
 python = ">=3.10,<3.13"
 cython = ">=3"
+numpy = ">=1.20.0"
+hatch-cython = ">=0.5.0"
 
 [tool.pixi.feature.dev.dependencies]
 pytest = ">=7.4.0"
 pytest-asyncio = ">=0.21.0"
 pytest-cov = "*"
+pytest-xdist = "*"
+pytest-timeout = "*"
 ruff = "*"
 mypy = "*"
+python-build = "*"
+hatchling = ">=1.18.0"
 
 [tool.pixi.feature.ci.dependencies]
 ruff = ">=0.1.6"
@@ -44,20 +71,62 @@ mypy = ">=1.5.1"
 pytest = ">=7.0.0"
 pytest-cov = ">=4.1.0"
 pre-commit = ">=2.15.0"
+bandit = ">=1.8.0"
+types-setuptools = "*"
+
+[tool.pixi.feature.quality-extended.dependencies]
+bandit = ">=1.8.0"
+pip-audit = "*"
+filelock = "*"
+
+[tool.pixi.feature.quality-extended.tasks]
+security-scan = "bandit -c pyproject.toml -r cython_framework/"
+safety-check = "pip-audit"
+
+[tool.pixi.feature.quality-ci.dependencies]
+python-build = "*"
+hatchling = "*"
+
+[tool.pixi.feature.quality-ci.tasks]
+build = "python -m build"
+
+[tool.pixi.feature.py310.dependencies]
+python = "3.10.*"
+
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
 
 [tool.pixi.environments]
 default = { features = ["dev"], solve-group = "default" }
 ci = { features = ["ci", "dev"], solve-group = "default" }
+quality-extended = { features = ["quality-extended"], solve-group = "default" }
+quality-ci = { features = ["quality-ci"], solve-group = "default" }
+py310 = { features = ["py310", "dev"], solve-group = "py310" }
+py311 = { features = ["py311", "dev"], solve-group = "py311" }
+py312 = { features = ["py312", "dev"], solve-group = "py312" }
 
 [tool.pixi.tasks]
 test = "pytest tests/"
 test-unit = "pytest tests/unit/"
 lint = "ruff check cython_framework tests"
+lint-fix = "ruff check --fix cython_framework tests"
 format = "ruff format cython_framework tests"
 format-check = "ruff format --check cython_framework tests"
 typecheck = "mypy cython_framework"
 quality = { depends-on = ["lint", "format-check"] }
 check = { depends-on = ["quality", "test"] }
+build = "python -m build --wheel --no-isolation"
+test-compile = { depends-on = ["build", "test"] }
+security = "bandit -c pyproject.toml -r cython_framework/"
+type-check = "mypy cython_framework"
+install-refactor = "python -m pip install -e ../../../../refactor-applications --no-deps"
+cython-convert = "python cython_framework/refactors/cython_rules.py --apply"
+cython-convert-dry = "python cython_framework/refactors/cython_rules.py"
+pytest-migrate = "python cython_framework/refactors/pytest_rules.py --apply"
+pytest-migrate-dry = "python cython_framework/refactors/pytest_rules.py"
 
 [tool.ruff]
 target-version = "py310"
@@ -72,6 +141,17 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
 timeout = 300
+log_cli = true
+log_cli_level = "DEBUG"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests",
+    "asyncio: marks tests as asyncio tests",
+]
+timeout_method = "thread"
+addopts = "--strict-markers --strict-config"
+minversion = "7.0"
 
 [tool.coverage.run]
 branch = true
@@ -84,3 +164,7 @@ show_missing = true
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]
