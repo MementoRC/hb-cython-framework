@@ -138,7 +138,7 @@ class PerformanceTestCase(BenchmarkTestCase):
 
         for _impl, benchmark_result in results.items():
             impl_name = benchmark_result.implementation
-            entry = manifest.get_module(self.MODULE_NAME)
+            entry = manifest.modules.get(self.MODULE_NAME)
             if entry is None:
                 self.skipTest(f"Module '{self.MODULE_NAME}' not found in manifest.")
                 return

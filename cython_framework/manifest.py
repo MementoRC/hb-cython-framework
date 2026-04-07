@@ -109,7 +109,7 @@ class ModuleEntry:
     benchmark_baseline: BenchmarkBaseline | None = None
     thresholds: Thresholds | None = None
     status: str = "unanalyzed"
-    github_issue: int | None = None
+    github_issue: str | None = None
     rust_candidate: bool = False
     rust_rationale: str | None = None
 
