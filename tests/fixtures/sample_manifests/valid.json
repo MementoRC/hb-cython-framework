@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "project": "test-project",
+  "modules": {
+    "connector.base": {
+      "tier": 1,
+      "source_type": "pyx",
+      "source_path": "connector/base.pyx",
+      "status": "analyzed",
+      "rust_candidate": false,
+      "rust_rationale": null,
+      "annotate_score": null,
+      "benchmark_baseline": null,
+      "thresholds": null,
+      "github_issue": null
+    }
+  }
+}
