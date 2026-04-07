@@ -23,7 +23,6 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Data model
 # ---------------------------------------------------------------------------
@@ -71,7 +70,7 @@ def _is_yellowish(color_hex: str) -> bool:
         b = int(color_hex[4:6], 16)
     except ValueError:
         return False
-    return r > 200 and g > 200 and b < r
+    return r >= 200 and g >= 200 and b < r
 
 
 class _AnnotateHTMLParser(HTMLParser):
