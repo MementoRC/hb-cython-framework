@@ -17,8 +17,8 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import cython_framework.manifest as manifest_mod
 from cython_framework.manifest import Manifest, ModuleEntry, load, replace_module, save
+from cython_framework.manifest import _manifest_to_dict  # noqa: PLC2701
 
 if TYPE_CHECKING:
     pass
@@ -92,7 +92,7 @@ def format_json(manifest: Manifest) -> str:
     Returns:
         Valid JSON string representation of the manifest.
     """
-    data = manifest_mod._manifest_to_dict(manifest)  # noqa: SLF001
+    data = _manifest_to_dict(manifest)
     return json.dumps(data, indent=2, sort_keys=True)
 
 
