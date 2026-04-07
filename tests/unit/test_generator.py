@@ -211,7 +211,7 @@ class TestGeneratorCLI:
             ],
             capture_output=True,
             text=True,
-            cwd="/home/memento/PycharmProjects/Hummingbot/hummingbot/sub-packages/cython-framework",
+            cwd=str(Path(__file__).resolve().parent.parent.parent),
         )
 
         assert result.returncode == 0, f"CLI failed:\n{result.stderr}"
