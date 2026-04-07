@@ -17,8 +17,14 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from cython_framework.manifest import Manifest, ModuleEntry, load, replace_module, save
-from cython_framework.manifest import _manifest_to_dict  # noqa: PLC2701
+from cython_framework.manifest import (
+    Manifest,
+    ModuleEntry,
+    _manifest_to_dict,  # noqa: PLC2701
+    load,
+    replace_module,
+    save,
+)
 
 if TYPE_CHECKING:
     pass
