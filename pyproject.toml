@@ -14,7 +14,7 @@ testing = [
 ]
 
 [build-system]
-requires = ["hatchling>=1.18.0", "hatch-cython>=0.6.0", "numpy>=1.20.0"]
+requires = ["hatchling>=1.18.0", "hatch-cython>=0.6.0", "numpy>=2.2.6"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -27,7 +27,7 @@ packages = ["cython_framework"]
 # Activated when building wheels: pixi run python -m build
 # Compiles .pyx files (including symlinked augmented .py files) to .so extensions
 [tool.hatch.build.targets.wheel.hooks.cython]
-dependencies = ["hatch-cython>=0.6.0", "numpy>=1.20.0"]
+dependencies = ["hatch-cython>=0.6.0", "numpy>=2.2.6"]
 
 [tool.hatch.build.targets.wheel.hooks.cython.options]
 # Only compile .pyx files, not all .py files
