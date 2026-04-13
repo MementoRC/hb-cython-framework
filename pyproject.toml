@@ -5,7 +5,7 @@ description = "Augmented Pure Python testing and build tooling for hummingbot su
 requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
 dependencies = [
-    "cython>=3",
+    "cython>=3.2.4",
 ]
 
 [project.optional-dependencies]
