@@ -10,7 +10,7 @@ dependencies = [
 
 [project.optional-dependencies]
 testing = [
-    "pytest>=7.4.0",
+    "pytest>=9.0.3",
 ]
 
 [build-system]
