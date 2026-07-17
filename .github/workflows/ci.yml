@@ -12,13 +12,14 @@ concurrency:
 
 jobs:
   checks:
-    uses: Claire-s-Monster/ci-framework/.github/workflows/reusable-ci.yml@v2.6.0
+    uses: Claire-s-Monster/ci-framework/.github/workflows/reusable-ci.yml@v2.9.7
     permissions:
       contents: write
       id-token: write
       pull-requests: write
       actions: read
       checks: write
+      security-events: write
     with:
       pixi-environment: "ci"
       python-versions: '["3.10", "3.11", "3.12"]'
@@ -28,6 +29,14 @@ jobs:
       editable-install: true
       package-path: "."
       allowed-licenses: "MIT, Apache-2.0, BSD-3-Clause, BSD-2-Clause, ISC"
+      # Native security scanning (replaces standalone security.yml).
+      # CodeQL defaults off in the framework, so enable it explicitly.
+      codeql: true
+      scorecard: true
+      fail-on-cve: true
+      fail-on-secrets: true
+      # SAST (semgrep) kept advisory on first adoption; flip to true to block on findings.
+      fail-on-sast: false
     secrets: inherit
 
   branch-policy:
