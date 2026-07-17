@@ -29,9 +29,13 @@ jobs:
       editable-install: true
       package-path: "."
       allowed-licenses: "MIT, Apache-2.0, BSD-3-Clause, BSD-2-Clause, ISC"
-      # Native security scanning (replaces standalone security.yml).
-      # CodeQL defaults off in the framework, so enable it explicitly.
-      codeql: true
+      # Native security scanning (replaces standalone security.yml): semgrep SAST,
+      # secret scanning, dependency audit, and scorecard all run in-framework.
+      # CodeQL is left at the framework default (off): v2.9.7 has no CodeQL language
+      # allowlist, so enabling it auto-detects a spurious c-cpp leg from the committed
+      # tests/fixtures/tier3_example/example.cpp, whose autobuild fails and blocks the
+      # required CI Success gate. Tracked upstream: Claire-s-Monster/ci-framework#227.
+      codeql: false
       scorecard: true
       fail-on-cve: true
       fail-on-secrets: true
