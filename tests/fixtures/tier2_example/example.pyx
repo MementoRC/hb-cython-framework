@@ -3,6 +3,7 @@
 cimport cython
 from libc.math cimport sqrt
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def compute_norm(double[:] data) nogil:

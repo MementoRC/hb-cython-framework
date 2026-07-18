@@ -10,15 +10,21 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Restrictive default token permissions (OpenSSF Scorecard Token-Permissions).
+# The reusable `checks` job below elevates only the scopes it needs.
+permissions:
+  contents: read
+
 jobs:
   checks:
-    uses: Claire-s-Monster/ci-framework/.github/workflows/reusable-ci.yml@v2.6.0
+    uses: Claire-s-Monster/ci-framework/.github/workflows/reusable-ci.yml@v2.9.8
     permissions:
       contents: write
       id-token: write
       pull-requests: write
       actions: read
       checks: write
+      security-events: write
     with:
       pixi-environment: "ci"
       python-versions: '["3.10", "3.11", "3.12"]'
@@ -28,6 +34,19 @@ jobs:
       editable-install: true
       package-path: "."
       allowed-licenses: "MIT, Apache-2.0, BSD-3-Clause, BSD-2-Clause, ISC"
+      # Native security scanning (replaces standalone security.yml): CodeQL, semgrep
+      # SAST, secret scanning, dependency audit, and scorecard all run in-framework.
+      # CodeQL is scoped to python via codeql-languages (v2.9.8 added the allowlist,
+      # resolving Claire-s-Monster/ci-framework#227). This prevents the spurious c-cpp
+      # leg that the committed tests/fixtures/tier3_example/example.cpp would otherwise
+      # trigger.
+      codeql: true
+      codeql-languages: 'python'
+      scorecard: true
+      fail-on-cve: true
+      fail-on-secrets: true
+      # SAST (semgrep) kept advisory on first adoption; flip to true to block on findings.
+      fail-on-sast: false
     secrets: inherit
 
   branch-policy:
