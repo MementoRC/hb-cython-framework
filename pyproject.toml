@@ -13,8 +13,11 @@ testing = [
     "pytest>=9.0.3",
 ]
 
+[project.entry-points.hatch]
+augmented-cython = "cython_framework.buildhook.hook"
+
 [build-system]
-requires = ["hatchling>=1.29.0", "hatch-cython>=0.6.0", "numpy>=2.2.6"]
+requires = ["hatchling>=1.29.0", "cython>=3.2.4", "numpy>=2.2.6", "setuptools>=64"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -23,26 +26,14 @@ path = "cython_framework/__about__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["cython_framework"]
 
-# Cython compilation via hatch-cython plugin
-# Activated when building wheels: pixi run python -m build
-# Compiles .pyx files (including symlinked augmented .py files) to .so extensions
-[tool.hatch.build.targets.wheel.hooks.cython]
-dependencies = ["hatch-cython>=0.6.0", "numpy>=2.2.6"]
-
-[tool.hatch.build.targets.wheel.hooks.cython.options]
-# Only compile .pyx files, not all .py files
-compile_py = false
-include_numpy = true
-include_pyarrow = false
-directives = { boundscheck = false, nonecheck = false, language_level = 3, binding = true }
-define_macros = [
-    ["NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION"],
-]
-compile_args = [
-    { platforms = ["linux", "darwin"], arg = "-O2" },
-    { platforms = ["darwin"], arch = "arm64", arg = "-arch arm64" },
-    { platforms = ["darwin"], arch = "x86_64", arg = "-arch x86_64" },
-]
+# Env-gated, pragma-driven Cython build hook.
+# Default OFF: pure-Python wheel, no Cython/compiler invoked, so bleeding-edge and
+# ordinary CI build with no C toolchain. Set HB_COMPILE_AUGMENTED=1 to compile every
+# module bearing the `# cython: augmented_pure_python=True` pragma under `paths`.
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"
+dependencies = ["cython>=3.2.4", "numpy>=2.2.6", "setuptools>=64"]
+paths = ["cython_framework"]
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
