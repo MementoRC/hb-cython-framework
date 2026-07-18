@@ -10,9 +10,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Restrictive default token permissions (OpenSSF Scorecard Token-Permissions).
+# The reusable `checks` job below elevates only the scopes it needs.
+permissions:
+  contents: read
+
 jobs:
   checks:
-    uses: Claire-s-Monster/ci-framework/.github/workflows/reusable-ci.yml@v2.9.7
+    uses: Claire-s-Monster/ci-framework/.github/workflows/reusable-ci.yml@v2.9.8
     permissions:
       contents: write
       id-token: write
@@ -29,13 +34,14 @@ jobs:
       editable-install: true
       package-path: "."
       allowed-licenses: "MIT, Apache-2.0, BSD-3-Clause, BSD-2-Clause, ISC"
-      # Native security scanning (replaces standalone security.yml): semgrep SAST,
-      # secret scanning, dependency audit, and scorecard all run in-framework.
-      # CodeQL is left at the framework default (off): v2.9.7 has no CodeQL language
-      # allowlist, so enabling it auto-detects a spurious c-cpp leg from the committed
-      # tests/fixtures/tier3_example/example.cpp, whose autobuild fails and blocks the
-      # required CI Success gate. Tracked upstream: Claire-s-Monster/ci-framework#227.
-      codeql: false
+      # Native security scanning (replaces standalone security.yml): CodeQL, semgrep
+      # SAST, secret scanning, dependency audit, and scorecard all run in-framework.
+      # CodeQL is scoped to python via codeql-languages (v2.9.8 added the allowlist,
+      # resolving Claire-s-Monster/ci-framework#227). This prevents the spurious c-cpp
+      # leg that the committed tests/fixtures/tier3_example/example.cpp would otherwise
+      # trigger.
+      codeql: true
+      codeql-languages: 'python'
       scorecard: true
       fail-on-cve: true
       fail-on-secrets: true
