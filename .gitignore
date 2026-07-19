@@ -13,3 +13,6 @@ build/
 *.egg
 .mcp.json
 .serena/
+.claude/
+logs/
+_spike/
