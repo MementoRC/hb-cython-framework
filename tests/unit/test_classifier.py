@@ -248,6 +248,94 @@ class TestClassifyTier3:
         result = classify(src)
         assert any("cdef_extern" in e for e in result.evidence)
 
+    def test_tier3_pyx_distutils_language_cpp(self, tmp_path):
+        """A .pyx file with '# distutils: language=c++' is Tier 3."""
+        src = tmp_path / "pubsub.pyx"
+        src.write_text(
+            "# distutils: language=c++\n"
+            "# cython: language_level=3str\n"
+            "\n"
+            "def emit(topic, data):\n"
+            "    pass\n"
+        )
+        result = classify(src)
+        assert result.tier == 3
+        assert result.source_type == "pyx"
+        assert result.rust_candidate is True
+        assert any("cpp_language" in e for e in result.evidence)
+
+    def test_tier3_pyx_distutils_sources(self, tmp_path):
+        """A .pyx file with '# distutils: sources=' is Tier 3."""
+        src = tmp_path / "wrapped.pyx"
+        src.write_text("# distutils: sources=mylib.cpp\n\ndef run():\n    pass\n")
+        result = classify(src)
+        assert result.tier == 3
+        assert any("cpp_sources" in e for e in result.evidence)
+
+    def test_tier3_pyx_cpp_stl_container(self, tmp_path):
+        """A .pyx file using C++ STL containers is Tier 3."""
+        src = tmp_path / "stl_mod.pyx"
+        src.write_text(
+            "from libcpp.unordered_map cimport unordered_map\n"
+            "\n"
+            "def make_map():\n"
+            "    cdef unordered_map[int, int] m\n"
+            "    return m\n"
+        )
+        result = classify(src)
+        assert result.tier == 3
+        assert any("cpp_stl_map" in e for e in result.evidence)
+
+    def test_tier3_pyx_cpp_directive_via_pxd_companion(self, tmp_path):
+        """C++ directive in a .pxd companion file escalates .pyx to Tier 3."""
+        pyx = tmp_path / "mymod.pyx"
+        pyx.write_text(
+            "# cython: language_level=3str\n\ndef greet(name):\n    return f'hello {name}'\n"
+        )
+        pxd = tmp_path / "mymod.pxd"
+        pxd.write_text(
+            "# distutils: language=c++\n"
+            "\n"
+            "cdef extern from 'mymod_types.h':\n"
+            "    ctypedef int MyInt\n"
+        )
+        result = classify(pyx)
+        assert result.tier == 3
+        assert result.rust_candidate is True
+        assert "pxd_companion_analyzed" in result.evidence
+
+    def test_tier2_pyx_with_pxd_companion_no_cpp(self, tmp_path):
+        """A .pxd companion with only Tier-2 patterns keeps .pyx at Tier 2."""
+        pyx = tmp_path / "heavymod.pyx"
+        pyx.write_text(
+            "# cython: language_level=3str\n\ndef fast(double[:] arr) nogil:\n    pass\n"
+        )
+        pxd = tmp_path / "heavymod.pxd"
+        pxd.write_text("cimport numpy as np\n")
+        result = classify(pyx)
+        assert result.tier == 2
+        assert result.rust_candidate is False
+        assert "pxd_companion_analyzed" in result.evidence
+
+    def test_tier2_fixture_still_tier2_no_cpp_directives(self):
+        """Confirm tier2_example fixture has nogil/memoryview but no C++ directives → Tier 2."""
+        result = classify(_TIER2_PYX)
+        assert result.tier == 2
+        assert result.rust_candidate is False
+        # Must have at least one tier-2 evidence item
+        assert len(result.evidence) > 0
+        # Must NOT contain any tier-3 evidence keywords
+        tier3_keywords = {
+            "cdef_extern",
+            "cpp_language",
+            "cpp_sources",
+            "cpp_stl_map",
+            "cpp_stl_set",
+            "cpp_stl_vector",
+            "cpp_stl_pair",
+        }
+        assert not any(e in tier3_keywords for e in result.evidence)
+
 
 # ---------------------------------------------------------------------------
 # classify() - Error handling
