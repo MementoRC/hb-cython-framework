@@ -18,3 +18,12 @@ repos:
       - id: check-docstring-first
       - id: check-merge-conflict
       - id: check-toml
+
+  - repo: local
+    hooks:
+      - id: link-augmented-pyx
+        name: link augmented .pyx symlinks
+        entry: python -m cython_framework.hooks.link_augmented_pyx
+        language: python
+        files: \.py$
+        pass_filenames: false
