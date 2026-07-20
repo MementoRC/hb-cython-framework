@@ -43,3 +43,17 @@ class RunningStats:
     def stddev(self) -> cython.double:
         v: cython.double = self._variance()
         return v**0.5
+
+
+def bench_running_stats(n: int = 500) -> float:
+    """Module-level benchmark entry point exercising RunningStats end-to-end.
+
+    A plain callable (rather than the RunningStats cclass itself) is needed
+    because BenchmarkTestCase.benchmark_all() resolves its target via
+    getattr(module, func_name) and calls it directly -- see G3 benchmark_cli.
+    """
+    stats = RunningStats()
+    for i in range(n):
+        stats.add(float(i))
+    stats.mean()
+    return stats.stddev()
