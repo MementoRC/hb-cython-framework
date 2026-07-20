@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
-import platform
 import shutil
 import subprocess
 import sys
@@ -23,6 +22,13 @@ import tempfile
 from pathlib import Path
 
 import pytest
+
+from cython_framework.buildhook.variant_builder import (
+    VariantBuildError,
+    _has_c_compiler,
+    build_variants,
+)
+from cython_framework.testing.cython_test_case import CythonModuleType
 
 # Skip entire module if Cython is not available
 cython = pytest.importorskip("Cython", reason="Cython not installed")
@@ -33,86 +39,22 @@ def _get_fixture_dir() -> Path:
     return Path(__file__).parent.parent / "fixtures" / "augmented_example"
 
 
-def _has_c_compiler() -> bool:
-    """Check if a C compiler is available."""
-    if platform.system() == "Windows":
-        return shutil.which("cl") is not None
-    return shutil.which("gcc") is not None or shutil.which("cc") is not None
-
-
 def _cythonize_file(py_path: Path, work_dir: Path) -> Path | None:
     """Cythonize a single .py file via .pyx symlink.
 
+    Thin delegator to `build_variants` (COMPILED_AUGMENTED_PYTHON variant).
     Returns the path to the compiled .so/.pyd, or None if compilation fails.
     """
-    # Copy the .py file to work dir
-    dest_py = work_dir / py_path.name
-    shutil.copy2(py_path, dest_py)
-
-    # Create .pyx symlink (what the pre-commit hook does)
-    pyx_path = dest_py.with_suffix(".pyx")
-    if pyx_path.exists():
-        pyx_path.unlink()
-    pyx_path.symlink_to(dest_py.name)
-
-    # Also copy __init__.py if it exists
-    init_file = py_path.parent / "__init__.py"
-    if init_file.exists():
-        shutil.copy2(init_file, work_dir / "__init__.py")
-
-    # Step 1: Cythonize .pyx → .c
-    result = subprocess.run(
-        [sys.executable, "-m", "cython", "--3str", str(pyx_path)],
-        capture_output=True,
-        text=True,
-        cwd=str(work_dir),
-    )
-    if result.returncode != 0:
-        pytest.skip(f"Cython compilation failed: {result.stderr}")
-
-    c_path = pyx_path.with_suffix(".c")
-    if not c_path.exists():
-        pytest.skip("Cython did not produce .c file")
-
-    # Step 2: Compile .c → .so/.pyd using distutils/setuptools inline
-    module_name = py_path.stem
-    setup_py = work_dir / "_setup_compile.py"
-    setup_py.write_text(f"""\
-import numpy as np
-from setuptools import Extension, setup
-
-ext = Extension(
-    "{module_name}",
-    sources=["{c_path.name}"],
-    include_dirs=[np.get_include()],
-    define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-)
-setup(
-    name="{module_name}",
-    ext_modules=[ext],
-    script_args=["build_ext", "--inplace"],
-)
-""")
-
-    result = subprocess.run(
-        [sys.executable, str(setup_py)],
-        capture_output=True,
-        text=True,
-        cwd=str(work_dir),
-    )
-    if result.returncode != 0:
-        pytest.skip(f"C compilation failed: {result.stderr}")
-
-    # Find the .so/.pyd file
-    if platform.system() == "Windows":
-        so_files = list(work_dir.glob(f"{module_name}*.pyd"))
-    else:
-        so_files = list(work_dir.glob(f"{module_name}*.so"))
-
-    if not so_files:
-        pytest.skip("No compiled extension found after build")
-
-    return so_files[0]
+    try:
+        outputs = build_variants(
+            py_path,
+            build_dir=work_dir,
+            variants=[CythonModuleType.COMPILED_AUGMENTED_PYTHON],
+        )
+    except VariantBuildError as e:
+        pytest.skip(str(e))
+        return None
+    return outputs[CythonModuleType.COMPILED_AUGMENTED_PYTHON]
 
 
 def _load_compiled_module(so_path: Path, module_name: str):
