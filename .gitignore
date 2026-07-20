@@ -16,3 +16,4 @@ build/
 .claude/
 logs/
 _spike/
+tests/fixtures/_variant_build_*/
