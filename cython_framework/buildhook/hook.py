@@ -11,6 +11,7 @@ build a pure-Python wheel with no toolchain present.
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from pathlib import Path
@@ -20,6 +21,8 @@ from hatchling.plugin import hookimpl
 
 # Single source of truth for pragma detection (reused from the pre-commit hook).
 from cython_framework.hooks.link_augmented_pyx import is_augmented
+
+_log = logging.getLogger(__name__)
 
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
 _ENV_VAR = "HB_COMPILE_AUGMENTED"
@@ -49,14 +52,23 @@ def discover_augmented(base) -> list[Path]:
 
     Eligibility is per file (the pragma) -- never a central manifest. Variant
     fallback directories (``__pure_python__``/``__pure_cython__``) and build
-    scratch dirs are skipped.
+    scratch dirs are skipped, as is anything under a dot-prefixed path
+    component (``.worktrees``, ``.pixi``, ``.git``, ``.mypy_cache``, ...).
+
+    Files whose path relative to *base* is not importable (a component that is
+    not a Python identifier, e.g. ``my-dir/mod.py``) cannot be built as a
+    module, so they are skipped with a debug log rather than handed to Cython.
     """
     base = Path(base)
     if not base.exists():
         return []
     out: list[Path] = []
     for py in sorted(base.rglob("*.py")):
-        if _SKIP_DIRS & set(py.parts):
+        parts = py.relative_to(base).with_suffix("").parts
+        if _SKIP_DIRS & set(parts) or any(p.startswith(".") for p in parts):
+            continue
+        if not all(p.isidentifier() for p in parts):
+            _log.debug("skipping %s: path is not a valid module name", py)
             continue
         if is_augmented(py):
             out.append(py)
@@ -64,7 +76,25 @@ def discover_augmented(base) -> list[Path]:
 
 
 def _module_name(py: Path, root: Path) -> str:
-    return ".".join(py.relative_to(root).with_suffix("").parts)
+    parts = py.relative_to(root).with_suffix("").parts
+    if not all(p.isidentifier() for p in parts):
+        # Backstop: discovery filters these, but a ``paths`` entry that is
+        # itself not an identifier (e.g. ``my-src``) still reaches here.
+        raise ValueError(
+            f"{py} cannot be compiled: {'/'.join(parts)!r} is not a valid "
+            "dotted module path relative to the project root"
+        )
+    return ".".join(parts)
+
+
+def _default_scan_paths(build_config) -> list[str]:
+    # Prefer the target's declared ``packages`` / ``only-include`` over the
+    # whole project dir; fall back to ``.`` when neither is configured.
+    packages = getattr(build_config, "packages", None) or []
+    if packages:
+        return list(packages)
+    only_include = getattr(build_config, "only_include", None) or {}
+    return list(only_include) or ["."]
 
 
 def _find_artifact(py: Path):
@@ -88,7 +118,7 @@ class AugmentedCythonBuildHook(BuildHookInterface):
             return
 
         root = Path(self.root)
-        scan_paths = self.config.get("paths") or ["."]
+        scan_paths = self.config.get("paths") or _default_scan_paths(self.build_config)
         targets: list[Path] = []
         for rel in scan_paths:
             targets.extend(discover_augmented(root / rel))

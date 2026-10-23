@@ -9,6 +9,8 @@ import pytest
 
 from cython_framework.buildhook.hook import (
     AugmentedCythonBuildHook,
+    _default_scan_paths,
+    _module_name,
     compilation_enabled,
     discover_augmented,
 )
@@ -45,6 +47,56 @@ class TestDiscoverAugmented:
     def test_non_pragma_file_excluded(self, tmp_path):
         (tmp_path / "plain.py").write_text("def f():\n    return 1\n")
         assert discover_augmented(tmp_path) == []
+
+    def test_skips_dot_dirs_like_worktrees(self, tmp_path):
+        # Regression for #31: a nested git worktree must not be discovered.
+        for rel in ("pkg", ".worktrees/x/pkg", ".mypy_cache/pkg"):
+            (tmp_path / rel).mkdir(parents=True)
+            shutil.copy(AUGMENTED / "example.py", tmp_path / rel / "mod.py")
+        assert discover_augmented(tmp_path) == [tmp_path / "pkg" / "mod.py"]
+
+    def test_dot_dir_above_base_is_not_skipped(self, tmp_path):
+        # Only components relative to the scan base count, so a project that
+        # itself lives under a dot-dir (e.g. ~/.local/...) still works.
+        base = tmp_path / ".local" / "proj"
+        (base / "pkg").mkdir(parents=True)
+        shutil.copy(AUGMENTED / "example.py", base / "pkg" / "mod.py")
+        assert discover_augmented(base) == [base / "pkg" / "mod.py"]
+
+    def test_skips_non_identifier_dir(self, tmp_path):
+        (tmp_path / "my-dir").mkdir()
+        shutil.copy(AUGMENTED / "example.py", tmp_path / "my-dir" / "mod.py")
+        assert discover_augmented(tmp_path) == []
+
+
+class TestModuleName:
+    def test_dotted_name(self, tmp_path):
+        assert _module_name(tmp_path / "pkg" / "mod.py", tmp_path) == "pkg.mod"
+
+    def test_non_identifier_raises_naming_file(self, tmp_path):
+        py = tmp_path / "my-src" / "mod.py"
+        with pytest.raises(ValueError, match="my-src"):
+            _module_name(py, tmp_path)
+
+
+class TestDefaultScanPaths:
+    class _Cfg:
+        def __init__(self, packages=(), only_include=None):
+            self.packages = list(packages)
+            self.only_include = only_include or {}
+
+    def test_no_build_config_falls_back_to_root(self):
+        assert _default_scan_paths(None) == ["."]
+
+    def test_unconfigured_target_falls_back_to_root(self):
+        assert _default_scan_paths(self._Cfg()) == ["."]
+
+    def test_prefers_packages(self):
+        cfg = self._Cfg(packages=["candles_feed"], only_include={"/x/other": "other"})
+        assert _default_scan_paths(cfg) == ["candles_feed"]
+
+    def test_uses_only_include_sources(self):
+        assert _default_scan_paths(self._Cfg(only_include={"/x/pkg": "pkg"})) == ["/x/pkg"]
 
 
 class _FakeApp:
