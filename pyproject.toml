@@ -65,6 +65,7 @@ pytest-cov = ">=4.1.0"
 pre-commit = ">=2.15.0"
 bandit = ">=1.8.0"
 types-setuptools = "*"
+cython-lint = "*"
 
 [tool.pixi.feature.quality-extended.dependencies]
 bandit = ">=1.8.0"
